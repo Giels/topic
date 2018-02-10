@@ -1,0 +1,33 @@
+.spacer {
+	height: 2.5rem;
+}
+
+.small-spacer {
+	height: 1rem;
+}
+
+.labels {
+	background-color: #CCCCCC;
+	display: flex;
+}
+
+.offset-by-margin.column,
+.offset-by-margin.columns {
+	margin-left: 7%;
+}
+
+.hidden {
+	display: none;
+}
+
+textarea {
+	height: 100px;
+	width: 100%;
+}
+
+.container {
+	padding-right: 1%;
+	padding-left: 5%;
+}
+
+.column,.columns { overflow-x: auto; }

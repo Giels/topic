@@ -1,0 +1,38 @@
+.rules {
+	background-color: #EEEEEE;
+}
+
+.offset-by-one-plus.column,
+.offset-by-one-plus.columns {
+	margin-left: 15%;
+}
+
+.post-form {
+	background-color: #cdcdcd;
+	padding-right: 0;
+	margin-right: 0;
+	margin-left: 0;
+	padding-left: 0;
+	width: 20%;
+	bottom: 0;
+	left: 0;
+	position: fixed;
+}
+
+.pages-area {
+	right: 0;
+	text-align: left;
+	margin-top: 10%;
+	margin-left: 1%;
+	width: 10%;
+	float: right;
+	overflow-x: auto;
+}
+
+.pages {
+	background-color: #cdcdcd;
+}
+
+.small {
+	font-size: 9pt;
+}

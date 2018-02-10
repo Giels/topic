@@ -1,0 +1,34 @@
+[package]
+name = "topic"
+version = "0.1.0"
+authors = ["nobody <nobody@topic.tk>"]
+
+[dependencies]
+rustc-serialize = "*"
+
+iron = "*"
+persistent = "*"
+params = "*"
+router = "*"
+url = "*"
+
+hyper = "*"
+
+regex = "*"
+
+sha2 = "*"
+
+hoedown = "*"
+
+toml = "*"
+
+postgres = {version = "*", features=["chrono"]}
+postgres_array = {git = "https://github.com/sfackler/rust-postgres-array"}
+
+r2d2_postgres = "*"
+r2d2 = "*"
+
+mustache = "*"
+
+chrono = {version = "*", features=["rustc-serialize"]}
+

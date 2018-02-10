@@ -1,0 +1,16 @@
+[server]
+admin_pwd = "My admin password"
+host = "localhost"
+port = 9090
+
+[database]
+user = "postgres"
+password = "My DB password"
+db = "My DB name"
+port = 5432
+host = "localhost"
+
+[site]
+name = "topic"
+posts_per_page = 10
+threads_per_page = 20
