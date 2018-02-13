@@ -1,5 +1,7 @@
 use iron::prelude::*;
 
+use std;
+
 use ::params::FromValue;
 use ::sha2::Digest;
 use ::sha2::Sha256;
@@ -30,16 +32,16 @@ pub fn handle_report_delete_post(request: &mut Request) -> IronResult<Response> 
 
     let ip = &request.remote_addr.ip().to_string() as &str;
     let mut hasher = Sha256::new();
-    hasher.input_str(ip);
-    let ip = &hasher.result_str() as &str;
+    hasher.input(ip.as_bytes());
+    let ip = std::str::from_utf8(&hasher.result().as_slice()).unwrap().to_owned();
 
     let action = &String::from_value(&params["action"]).unwrap() as &str;
 
     let mut hasher = Sha256::new();
     let password = &String::from_value(&params["password"]).unwrap() as &str;
     let invalid = str::len(password) == 0;
-    hasher.input_str(password);
-    let password = &hasher.result_str() as &str;
+    hasher.input(password.as_bytes());
+    let password = std::str::from_utf8(&hasher.result().as_slice()).unwrap().to_owned();
 
     let mut thread_deleted = false;
 
@@ -65,20 +67,20 @@ pub fn handle_report_delete_post(request: &mut Request) -> IronResult<Response> 
     } else { // action == "report"
         for &s in selected.iter() {
             let reason = &String::from_value(&params["reason"]).unwrap() as &str;
-            let _ = ::db::report_post(&conn, ip, s, reason);
+            let _ = ::db::report_post(&conn, &ip, s, reason);
         }
     }
 
     let mut previous_url = request.url.clone();
-    previous_url.path.pop();
-    previous_url.path.pop();
+    previous_url.path().pop();
+    previous_url.path().pop();
 
     if thread_deleted {
-        previous_url.path.pop();
-        previous_url.path.pop();
-        previous_url.path.push("0".to_string());
+        previous_url.path().pop();
+        previous_url.path().pop();
+        previous_url.path().push("0");
     } else {
-        previous_url.path.push(format!("{}", new_page));
+        previous_url.path().push(&format!("{}", new_page));
     }
 
     Ok(Response::with((::iron::status::MovedPermanently, ::iron::modifiers::Redirect(previous_url))))

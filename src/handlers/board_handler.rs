@@ -12,13 +12,13 @@ use ::router::Router;
 
 use config;
 
-#[derive(RustcEncodable)]
+#[derive(Debug, Deserialize, Serialize)]
 struct Page {
     num: i64,
     link: bool,
 }
 
-#[derive(RustcEncodable)]
+#[derive(Debug, Deserialize, Serialize)]
 struct ThreadInfo {
     stickies: Vec<Thread>,
     threads: Vec<Thread>,
@@ -28,7 +28,7 @@ struct ThreadInfo {
     pages: Vec<Page>,
 }
 
-#[derive(RustcEncodable)]
+#[derive(Debug, Deserialize, Serialize)]
 struct Thread {
     uid: i64,
     title: String,

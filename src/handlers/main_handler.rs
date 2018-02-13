@@ -6,20 +6,20 @@ use ::persistent::Read;
 
 use config;
 
-#[derive(RustcEncodable)]
+#[derive(Debug, Serialize, Deserialize)]
 struct Board {
     link: String,
     name: String,
     thread_count: i64,
 }
 
-#[derive(RustcEncodable)]
+#[derive(Debug, Serialize, Deserialize)]
 struct BoardCat {
     name: String,
     boards: Vec<Board>,
 }
 
-#[derive(RustcEncodable)]
+#[derive(Debug, Serialize, Deserialize)]
 struct SiteInfo {
     cats: Vec<BoardCat>,
     name: String,
@@ -27,13 +27,13 @@ struct SiteInfo {
 
 pub fn redirect_page0(request: &mut Request) -> IronResult<Response> {
     let mut url = request.url.clone();
-    url.path.push("0".to_string());
+    url.path().push("0");
     Ok(Response::with((::iron::status::MovedPermanently, ::iron::modifiers::Redirect(url))))
 }
 
 pub fn redirect_up(request: &mut Request) -> IronResult<Response> {
     let mut url = request.url.clone();
-    url.path.pop();
+    url.path().pop();
     Ok(Response::with((::iron::status::MovedPermanently, ::iron::modifiers::Redirect(url))))
 }
 

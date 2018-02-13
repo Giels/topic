@@ -2,6 +2,8 @@ use iron::prelude::*;
 use ::sha2::Digest;
 use ::sha2::Sha256;
 
+use std;
+
 use hoedown as md;
 use hoedown::renderer::Render;
 
@@ -9,7 +11,6 @@ use ::params::FromValue;
 
 use ::router::Router;
 
-use std::str;
 use std::cmp;
 
 use regex::Regex;
@@ -18,22 +19,22 @@ use regex::Captures;
 use config;
 
 use chrono::NaiveDateTime;
-use chrono::UTC;
+use chrono::Utc;
 
 fn make_new_post(thread: &str, date: Option<&NaiveDateTime>, params: &::params::Map, conn: &super::PostgresConnection) -> Result<(), String> {
     let mut hasher = ::sha2::Sha256::new();
-    hasher.input_str(&String::from_value(&params["ip"]).unwrap() as &str);
-    let ip = &*hasher.result_str();
+    hasher.input(&String::from_value(&params["ip"]).unwrap().as_bytes());
+    let ip = std::str::from_utf8(hasher.result().as_slice()).unwrap().to_owned();
 
-    if super::banned(conn, ip) {
-        Err(format!("Users with this IP are banned: {}", super::ban_reason(conn, ip)).to_string())
+    if super::banned(conn, &ip) {
+        Err(format!("Users with this IP are banned: {}", super::ban_reason(conn, &ip)).to_string())
     } else {
         let bump = params.contains_key("bump");
         let name = &String::from_value(&params["name"]).unwrap() as &str;
         let mut hasher = Sha256::new();
         let password = &String::from_value(&params["password"]).unwrap() as &str;
-        hasher.input_str(password);
-        let password = &hasher.result_str() as &str;
+        hasher.input(password.as_bytes());
+        let password = std::str::from_utf8(&hasher.result().as_slice()).unwrap().to_owned();
 
         let content = &String::from_value(&params["content"]).unwrap() as &str;
         let mut md_options = md::Extension::empty();
@@ -55,7 +56,7 @@ fn make_new_post(thread: &str, date: Option<&NaiveDateTime>, params: &::params::
         let ppp = i64::from_value(&params["ppp"]).unwrap();
 
         let content = &(&re).replace_all(content, (|x: &Captures| {
-            let post_num = x.at(1).unwrap();
+            let post_num = x.get(1).unwrap().as_str();
             let page = cmp::max((str::parse::<u64>(post_num).unwrap() as i64) / ppp, 0);
             format!("<a href=\"{0}#{1}\">@{1}</a>", page, post_num)
         })) as &str;
@@ -72,11 +73,11 @@ fn make_new_post(thread: &str, date: Option<&NaiveDateTime>, params: &::params::
 
         let now;
         if date.is_none() {
-            now = UTC::now().naive_utc();
+            now = Utc::now().naive_utc();
         } else {
             now = *date.unwrap();
         }
-        let _ = ::db::insert_post(conn, thread, number, name, content, password, bump, ip, &now);
+        let _ = ::db::insert_post(conn, thread, number, name, content, &password, bump, &ip, &now);
 
         if bump {
             let _ = ::db::bump_thread(conn, thread, &now);
@@ -109,9 +110,9 @@ pub fn handle_new_post(request: &mut Request) -> IronResult<Response> {
         Err(e) => Ok(Response::with((::iron::status::Ok, e))),
         Ok(_) => {
             let mut previous_url = request.url.clone();
-            previous_url.path.pop();
-            previous_url.path.pop();
-            previous_url.path.push(format!("{}", new_page));
+            previous_url.path().pop();
+            previous_url.path().pop();
+            previous_url.path().push(&format!("{}", new_page));
             Ok(Response::with((::iron::status::MovedPermanently, ::iron::modifiers::Redirect(previous_url))))
         }
     }
@@ -131,7 +132,7 @@ pub fn handle_new_thread(request: &mut Request) -> IronResult<Response> {
 
     let title = String::from_value(&params["title"]).unwrap();
 
-    let now = UTC::now().naive_utc();
+    let now = Utc::now().naive_utc();
     let thread = ::db::insert_thread(&conn, &title as &str, &board as &str, &now).unwrap().get(0).get::<_,i64>(0);
     let thread = &format!("{}", thread) as &str;
 
@@ -139,10 +140,10 @@ pub fn handle_new_thread(request: &mut Request) -> IronResult<Response> {
         Err(e) => Ok(Response::with((::iron::status::Ok, e))),
         Ok(_) => {
             let mut next_url = request.url.clone();
-            next_url.path.pop();
-            next_url.path.push("t".to_string());
-            next_url.path.push(thread.to_string());
-            next_url.path.push("0".to_string());
+            next_url.path().pop();
+            next_url.path().push("t");
+            next_url.path().push(&thread.to_string());
+            next_url.path().push("0");
             Ok(Response::with((::iron::status::MovedPermanently, ::iron::modifiers::Redirect(next_url))))
         }
     }

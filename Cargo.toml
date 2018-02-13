@@ -4,7 +4,8 @@ version = "0.1.0"
 authors = ["nobody <nobody@topic.tk>"]
 
 [dependencies]
-rustc-serialize = "*"
+serde = "*"
+serde_derive = "*"
 
 iron = "*"
 persistent = "*"
@@ -16,13 +17,14 @@ hyper = "*"
 
 regex = "*"
 
+digest = {version = "*", features = ["std"]}
 sha2 = "*"
 
 hoedown = "*"
 
 toml = "*"
 
-postgres = {version = "*", features=["chrono"]}
+postgres = {version = "*", features = ["with-chrono"]}
 postgres_array = {git = "https://github.com/sfackler/rust-postgres-array"}
 
 r2d2_postgres = "*"

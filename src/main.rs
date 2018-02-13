@@ -23,20 +23,20 @@ fn main() {
     let logged_mods = HashMap::new();
 
     let router = router! {
-        post "/:board/t/:thread/:page/new" => handle_new_post,
-        post "/:board/t/:thread/:page/report_delete" => handle_report_delete_post,
-        get "/:board/t/:thread/:page" => handle_thread,
-        get "/:board/t/:thread" => redirect_page0,
-        post "/:board/new" => handle_new_thread,
-        get "/:board/t" => redirect_up,
-        get "/:board/:page" => handle_board,
-        get "/res/:res" => handle_resource,
-        get "/mod/:page" => handle_mod_page,
-        get "/login" => handle_login_page,
-        get "/login_" => handle_login,
-        get "/mod" => redirect_page0,
-        get "/:board" => redirect_page0,
-        get "/" => handle_main,
+        new_post: post "/:board/t/:thread/:page/new" => handle_new_post,
+        mod_post: post "/:board/t/:thread/:page/report_delete" => handle_report_delete_post,
+        view_thread: get "/:board/t/:thread/:page" => handle_thread,
+        view_thread0: get "/:board/t/:thread" => redirect_page0,
+        new_thread: post "/:board/new" => handle_new_thread,
+        no_thread_id: get "/:board/t" => redirect_up,
+        view_board: get "/:board/:page" => handle_board,
+        view_res: get "/res/:res" => handle_resource,
+        view_admin: get "/mod/:page" => handle_mod_page,
+        view_admin_login: get "/login" => handle_login_page,
+        manage_admin_login: get "/login_" => handle_login,
+        no_mod_id: get "/mod" => redirect_page0,
+        no_board_id: get "/:board" => redirect_page0,
+        index: get "/" => handle_main,
     };
 
     let mut chain = iron::Chain::new(router);

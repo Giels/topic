@@ -7,7 +7,7 @@ use iron::typemap;
 
 use chrono::NaiveDateTime;
 
-use db::r2d2_postgres::{PostgresConnectionManager, SslMode};
+use db::r2d2_postgres::{PostgresConnectionManager, TlsMode};
 
 use db::postgres::Connection;
 
@@ -30,12 +30,11 @@ pub fn postgres_pool(conf: &DbConfig) -> r2d2::Pool<r2d2_postgres::PostgresConne
                  conf.host,
                  conf.port,
                  conf.db) as &str,
-                 SslMode::None).unwrap();
-    let config = r2d2::Config::builder()
+                 TlsMode::None).unwrap();
+    r2d2::Pool::builder()
         .error_handler(Box::new(r2d2::LoggingErrorHandler))
-        .pool_size(10)
-        .build();
-    (r2d2::Pool::new(config, manager)).unwrap()
+        .max_size(10)
+        .build(manager).unwrap()
 }
 
 impl typemap::Key for PostgresPool { type Value = r2d2::Pool<PostgresConnectionManager>; }
@@ -54,7 +53,7 @@ impl typemap::Key for PostgresPool { type Value = r2d2::Pool<PostgresConnectionM
 //
 macro_rules! def_queries {
     ( $($prep_name:ident ($($arg_name:ident : $args:ty),*) => $prep_val:expr);*; ) => (
-        $(pub fn $prep_name<'a>(conn: &'a Connection, $($arg_name : $args),*) -> PgResult<PgRows<'a>> {
+        $(pub fn $prep_name(conn: &Connection, $($arg_name : $args),*) -> PgResult<PgRows> {
             let data = [$(&$arg_name as &ToSql),*];
             conn.query($prep_val, &data[..])
         })*

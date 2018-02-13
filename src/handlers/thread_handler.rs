@@ -12,13 +12,13 @@ use config;
 
 use ::router::Router;
 
-#[derive(RustcEncodable)]
+#[derive(Debug, Serialize, Deserialize)]
 struct Page {
     num: i64,
     link: bool,
 }
 
-#[derive(RustcEncodable)]
+#[derive(Debug, Serialize, Deserialize)]
 struct Post {
     name: String,
     date: String,
@@ -29,7 +29,7 @@ struct Post {
     typ: i32,
 }
 
-#[derive(RustcEncodable)]
+#[derive(Debug, Serialize, Deserialize)]
 struct PostInfo {
     posts: Vec<Post>,
     rules: Vec<String>,

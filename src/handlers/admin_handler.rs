@@ -1,7 +1,7 @@
 extern crate iron;
 extern crate mustache;
 
-extern crate rustc_serialize;
+use std;
 
 use iron::prelude::*;
 use persistent::Read;
@@ -20,7 +20,6 @@ use hoedown::renderer::Render;
 
 use core::borrow::Borrow;
 
-use std::str;
 use std::cmp;
 use core::borrow::BorrowMut;
 
@@ -33,7 +32,7 @@ pub fn handle_login_page(request: &mut Request) -> IronResult<Response> {
     template.render(&mut bytes, &data).unwrap();
 
     Ok(Response::with(("text/html".parse::<::iron::mime::Mime>().unwrap(), ::iron::status::Ok,
-    str::from_utf8(&bytes).unwrap())))
+    std::str::from_utf8(&bytes).unwrap())))
 }
 
 pub fn handle_mod_page(request: &mut Request) -> IronResult<Response> {
@@ -43,12 +42,12 @@ pub fn handle_mod_page(request: &mut Request) -> IronResult<Response> {
     let session = request.get::<::persistent::Read<::sessions::SessionStore<String, String>>>().unwrap();
     
     let mut hasher = ::sha2::Sha256::new();
-    hasher.input_str(&String::from_value(&params["ip"]).unwrap() as &str);
-    let ip = hasher.result_str();
+    hasher.input(&String::from_value(&params["ip"]).unwrap().as_bytes());
+    let ip = std::str::from_utf8(hasher.result().as_slice()).unwrap().to_owned();
 
     let mut data: HashMap<String, String> = HashMap::new();
 
-    session.get(&ip).and_then(|uname| {
+    session.get(&ip.to_owned()).and_then(|uname| {
         let possible_powers = vec!["can_delete", "can_ban", "can_sticky", "can_edit"];
         let mod_powers = ::db::get_mod_powers(&conn, uname).unwrap();
         let mod_str = "Mod Abilities:".to_string();
@@ -61,9 +60,9 @@ pub fn handle_mod_page(request: &mut Request) -> IronResult<Response> {
         template.render(&mut bytes, &data).unwrap();
 
         Some(Ok(Response::with(("text/html".parse::<::iron::mime::Mime>().unwrap(), ::iron::status::Ok,
-        str::from_utf8(&bytes).unwrap()))))
+        std::str::from_utf8(&bytes).unwrap()))))
     }).unwrap_or({
-        next_url.path.pop();
+        next_url.path().pop();
         Ok(Response::with((::iron::status::MovedPermanently, ::iron::modifiers::Redirect(next_url))))
     })
 }
@@ -78,21 +77,21 @@ pub fn handle_login(request: &mut Request) -> IronResult<Response> {
     let page = str::parse::<i64>(&get_var!(request, "page") as &str);
     
     let mut hasher = ::sha2::Sha256::new();
-    hasher.input_str(pass);
-    let pass = &hasher.result_str() as &str;
+    hasher.input(pass.as_bytes());
+    let pass = std::str::from_utf8(&hasher.result().as_slice()).unwrap().to_owned();
 
-    if ::db::valid_mod_login(&conn, uname, pass).unwrap().get(0).get(0) {
+    if ::db::valid_mod_login(&conn, uname, &pass).unwrap().get(0).get(0) {
         let mut hasher = ::sha2::Sha256::new();
-        hasher.input_str(&String::from_value(&params["ip"]).unwrap() as &str);
-        let ip = hasher.result_str();
+        hasher.input(&String::from_value(&params["ip"]).unwrap().as_bytes());
+        let ip = std::str::from_utf8(hasher.result().as_slice()).unwrap().to_owned();
 
         request.get_mut::<::persistent::Read<::sessions::SessionStore<String, String>>>().map(|mut session| {
             let ref mut table = *Arc::get_mut(&mut session).unwrap();
-            table.insert(ip, uname.to_string());
+            table.insert(ip.to_owned(), uname.to_string());
         });
 
-        next_url.path.pop();
-        next_url.path.push("mod/0".to_string());
+        next_url.path().pop();
+        next_url.path().push("mod/0");
         return Ok(Response::with((::iron::status::MovedPermanently, ::iron::modifiers::Redirect(next_url))))
     }
 

@@ -1,2 +1,6 @@
 target
 src/config.toml
+*.swp
+*.swn
+*.swo
+*~

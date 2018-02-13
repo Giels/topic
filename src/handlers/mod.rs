@@ -8,6 +8,8 @@ use db;
 
 use iron::response::Response as IronResponse;
 
+pub type PostgresConnection = r2d2::PooledConnection<PostgresConnectionManager>;
+
 fn handle_404() -> IronResult<IronResponse> {
     Ok(IronResponse::with((iron::status::NotFound, "Page not found")))
 }
@@ -28,8 +30,6 @@ fn ban_reason(conn: &PostgresConnection, ip: &str) -> String {
         "No ban on record, please contact an admin.".to_string()
     }
 }
-
-pub type PostgresConnection = r2d2::PooledConnection<PostgresConnectionManager>;
 
 mod main_handler;
 mod board_handler;
