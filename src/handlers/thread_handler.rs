@@ -14,7 +14,7 @@ use ::router::Router;
 
 #[derive(Debug, Serialize, Deserialize)]
 struct Page {
-    num: i64,
+    num: i32,
     link: bool,
 }
 
@@ -24,8 +24,8 @@ struct Post {
     date: String,
     content: String,
     bump: bool,
-    number: i64,
-    uid: i64,
+    number: i32,
+    uid: i32,
     typ: i32,
 }
 
@@ -44,23 +44,23 @@ pub fn handle_thread(request: &mut Request) -> IronResult<Response> {
 
     let thread = get_var!(request, "thread");
     let board = get_var!(request, "board");
-    let page = str::parse::<i64>(get_var!(request, "page")).unwrap_or(-1);
+    let page = str::parse::<i32>(get_var!(request, "page")).unwrap_or(-1);
 
-    let parsed_id = thread.parse::<i64>().unwrap_or(-1);
+    let parsed_id = thread.parse::<i32>().unwrap_or(-1);
     let nposts;
 
     if parsed_id >= 0 && page >= 0 {
         nposts = ::db::get_num_posts(&conn, parsed_id).unwrap().get(0).get::<_,i64>(0);
-        let valid = (nposts > 0) && page <= (cmp::max(nposts - 1, 0) / (config.site.posts_per_page as i64));
+        let valid = (nposts > 0) && page <= (cmp::max(nposts as i32 - 1, 0) / (config.site.posts_per_page as i32));
 
         if !valid {
             return super::handle_404();
         }
     } else { return super::handle_404(); }
 
-    let npages = (nposts - 1) / (config.site.posts_per_page as i64) + 1;
+    let npages: i32 = (nposts as i32 - 1) / (config.site.posts_per_page as i32) + 1;
 
-    let offset = (config.site.posts_per_page as i64) * page;
+    let offset = ((config.site.posts_per_page as i32) * page) as i64;
     let limit = config.site.posts_per_page as i64;
 
     let post_rows = ::db::get_posts(&conn, parsed_id, offset, limit).unwrap();
@@ -72,11 +72,11 @@ pub fn handle_thread(request: &mut Request) -> IronResult<Response> {
 
     for r in post_rows.iter() {
         let n = r.get("name");
-        let d = r.get::<_,NaiveDateTime>(2).to_string();
+        let d = format!("{:?}", r.get::<_,NaiveDateTime>(2)).to_owned();
         let c = r.get::<_,String>("content");
         let b = r.get::<_,bool>("bump");
-        let number = r.get::<_,i64>("number");
-        let u = r.get::<_,i64>("uid");
+        let number = r.get::<_,i32>("number");
+        let u = r.get::<_,i32>("uid");
         let t = r.get::<_,i32>("type");
         posts.push(Post { name: n, date: d, content: c, bump: b, number: number, uid: u, typ: t });
     }

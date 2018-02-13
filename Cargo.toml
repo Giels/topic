@@ -32,5 +32,5 @@ r2d2 = "*"
 
 mustache = "*"
 
-chrono = {version = "*", features=["rustc-serialize"]}
+chrono = {version = "*", features = ["serde"]}
 

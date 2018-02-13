@@ -70,15 +70,15 @@ macro_rules! def_updates {
 }
 
 def_updates! {
-    insert_post(tid: i64, number: i64, name: &str, content: &str, password: &str, bump: bool, ip: &str, date: &NaiveDateTime) => "INSERT INTO posts (tid, number, name, content, password, bump, ip, cdate) VALUES($1, $2, $3, $4, $5, $6, $7, $8)";
-    insert_special_post(tid: i64, number: i64, name: &str, content: &str, password: &str, bump: bool, typ: i64, ip: &str) => "INSERT INTO posts (tid, number, name, content, password, bump, type, ip) VALUES($1, $2, $3, $4, $5, $6, $7, $8)";
+    insert_post(tid: i32, number: i32, name: &str, content: &str, password: &str, bump: bool, ip: &str, date: &NaiveDateTime) => "INSERT INTO posts (tid, number, name, content, password, bump, ip, cdate) VALUES($1, $2, $3, $4, $5, $6, $7, $8)";
+    insert_special_post(tid: i32, number: i64, name: &str, content: &str, password: &str, bump: bool, typ: i64, ip: &str) => "INSERT INTO posts (tid, number, name, content, password, bump, type, ip) VALUES($1, $2, $3, $4, $5, $6, $7, $8)";
 
-    bump_thread(tid: i64, bdate: &NaiveDateTime) => "UPDATE threads SET bdate = $2 WHERE uid = $1";
+    bump_thread(tid: i32, bdate: &NaiveDateTime) => "UPDATE threads SET bdate = $2 WHERE uid = $1";
 
-    report_post(ip: &str, uid: i64, reason: &str) => "INSERT INTO reports (ip, post, reason) VALUES ($1, $2, $3)";
+    report_post(ip: &str, uid: i32, reason: &str) => "INSERT INTO reports (ip, post, reason) VALUES ($1, $2, $3)";
 
-    delete_post(uid: i64) => "UPDATE posts SET deleted = 'true' WHERE uid = $1";
-    delete_thread(uid: i64) => "DELETE FROM threads WHERE uid = $1";
+    delete_post(uid: i32) => "UPDATE posts SET deleted = 'true' WHERE uid = $1";
+    delete_thread(uid: i32) => "DELETE FROM threads WHERE uid = $1";
 }
 
 def_queries! {
@@ -100,15 +100,15 @@ def_queries! {
     get_sticky_threads(link: &str) => "SELECT title, uid FROM threads WHERE bid IN (SELECT uid FROM boards WHERE link = $1) AND sticky = 'true' ORDER BY uid";
     get_normal_threads(link: &str, offset: i64, limit: i64) => "SELECT uid, title FROM threads WHERE bid IN (SELECT uid FROM boards WHERE link = $1) AND sticky = 'f' ORDER BY bdate DESC OFFSET $2 LIMIT $3";
 
-    get_thread_cdate(tid: i64) => "SELECT DATE_TRUNC('second', cdate) FROM posts WHERE tid = $1 ORDER BY cdate LIMIT 1";
-    get_thread_mdate(tid: i64) => "SELECT DATE_TRUNC('second', cdate) FROM posts WHERE tid = $1 ORDER BY cdate DESC LIMIT 1";
+    get_thread_cdate(tid: i32) => "SELECT DATE_TRUNC('second', cdate) FROM posts WHERE tid = $1 ORDER BY cdate LIMIT 1";
+    get_thread_mdate(tid: i32) => "SELECT DATE_TRUNC('second', cdate) FROM posts WHERE tid = $1 ORDER BY cdate DESC LIMIT 1";
 
-    get_posts(tid: i64, offset: i64, limit: i64) => "SELECT uid, name, DATE_TRUNC('second', cdate), content, password, bump, number, type FROM posts WHERE tid = $1 AND deleted = 'false' ORDER BY cdate OFFSET $2 LIMIT $3";
-    get_first_post_id(tid: i64) => "SELECT uid FROM posts WHERE tid = $1 LIMIT 1";
-    get_last_post_number(tid: i64) => "SELECT number FROM posts WHERE tid = $1 ORDER BY number DESC LIMIT 1";
-    get_post_password(uid: i64) => "SELECT password FROM posts WHERE uid = $1";
+    get_posts(tid: i32, offset: i64, limit: i64) => "SELECT uid, name, DATE_TRUNC('second', cdate), content, password, bump, number, type FROM posts WHERE tid = $1 AND deleted = 'false' ORDER BY cdate OFFSET $2 LIMIT $3";
+    get_first_post_id(tid: i32) => "SELECT uid FROM posts WHERE tid = $1 LIMIT 1";
+    get_last_post_number(tid: i32) => "SELECT number FROM posts WHERE tid = $1 ORDER BY number DESC LIMIT 1";
+    get_post_password(uid: i32) => "SELECT password FROM posts WHERE uid = $1";
 
-    get_num_posts(tid: i64) => "SELECT count(*) FROM posts WHERE tid = $1";
+    get_num_posts(tid: i32) => "SELECT count(*) FROM posts WHERE tid = $1 AND deleted = 'f'";
 
     is_banned(ip: &str) => "SELECT exists(SELECT 1 FROM bans WHERE ip = $1)";
     get_ban_reason(ip: &str) => "SELECT reason FROM bans WHERE ip = $1";

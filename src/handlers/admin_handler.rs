@@ -28,7 +28,7 @@ use std::sync::Arc;
 pub fn handle_login_page(request: &mut Request) -> IronResult<Response> {
     let mut bytes = vec![];
     let mut data: HashMap<String, String> = HashMap::new();
-    let template = ::mustache::compile_path("assets/mod.tpl").unwrap();
+    let template = ::mustache::compile_path("assets/login.tpl").unwrap();
     template.render(&mut bytes, &data).unwrap();
 
     Ok(Response::with(("text/html".parse::<::iron::mime::Mime>().unwrap(), ::iron::status::Ok,
@@ -42,8 +42,8 @@ pub fn handle_mod_page(request: &mut Request) -> IronResult<Response> {
     let session = request.get::<::persistent::Read<::sessions::SessionStore<String, String>>>().unwrap();
     
     let mut hasher = ::sha2::Sha256::new();
-    hasher.input(&String::from_value(&params["ip"]).unwrap().as_bytes());
-    let ip = std::str::from_utf8(hasher.result().as_slice()).unwrap().to_owned();
+    hasher.input(&request.remote_addr.ip().to_string().as_bytes());
+    let ip = format!("{:?}", hasher.result().as_slice()).to_owned();
 
     let mut data: HashMap<String, String> = HashMap::new();
 
@@ -56,44 +56,75 @@ pub fn handle_mod_page(request: &mut Request) -> IronResult<Response> {
         }
 
         let mut bytes = vec![];
-        let template = ::mustache::compile_path("assets/login.tpl").unwrap();
+        let template = ::mustache::compile_path("assets/mod.tpl").unwrap();
         template.render(&mut bytes, &data).unwrap();
 
         Some(Ok(Response::with(("text/html".parse::<::iron::mime::Mime>().unwrap(), ::iron::status::Ok,
         std::str::from_utf8(&bytes).unwrap()))))
     }).unwrap_or({
-        next_url.path().pop();
-        Ok(Response::with((::iron::status::MovedPermanently, ::iron::modifiers::Redirect(next_url))))
+        let mut url_string = String::new();
+        url_string.push_str(&format!("{}", request.url.scheme()));
+        url_string.push_str("://");
+        url_string.push_str(&format!("{}", request.url.host()));
+        url_string.push(':');
+        url_string.push_str(&format!("{}", request.url.port()));
+
+        let mut prev_url = request.url.path().clone();
+        prev_url.pop();
+        prev_url.pop();
+
+        for s in prev_url {
+            url_string.push('/');
+            url_string.push_str(s);
+        };
+
+        let new_url = iron::Url::parse(&url_string).unwrap();
+        Ok(Response::with((::iron::status::MovedPermanently, ::iron::modifiers::Redirect(new_url))))
     })
 }
 
 pub fn handle_login(request: &mut Request) -> IronResult<Response> {
     let conn = request.get::<::persistent::Read<::db::PostgresPool>>().unwrap().get().unwrap();
     let params = request.get::<::params::Params>().unwrap();
-    let mut next_url = request.url.clone();
     let params = request.get::<::params::Params>().unwrap();
     let uname = &String::from_value(&params["uname"]).unwrap() as &str;
     let pass = &String::from_value(&params["pass"]).unwrap() as &str;
-    let page = str::parse::<i64>(&get_var!(request, "page") as &str);
     
     let mut hasher = ::sha2::Sha256::new();
     hasher.input(pass.as_bytes());
-    let pass = std::str::from_utf8(&hasher.result().as_slice()).unwrap().to_owned();
+    let pass = format!("{:?}", &hasher.result().as_slice()).to_owned();
 
-    if ::db::valid_mod_login(&conn, uname, &pass).unwrap().get(0).get(0) {
+    let valid: i64 = ::db::valid_mod_login(&conn, uname, &pass).unwrap().get(0).get(0);
+    if valid == 1 {
         let mut hasher = ::sha2::Sha256::new();
-        hasher.input(&String::from_value(&params["ip"]).unwrap().as_bytes());
-        let ip = std::str::from_utf8(hasher.result().as_slice()).unwrap().to_owned();
+        hasher.input(&request.remote_addr.ip().to_string().as_bytes());
+        let ip = format!("{:?}", hasher.result().as_slice()).to_owned();
 
         request.get_mut::<::persistent::Read<::sessions::SessionStore<String, String>>>().map(|mut session| {
             let ref mut table = *Arc::get_mut(&mut session).unwrap();
             table.insert(ip.to_owned(), uname.to_string());
         });
 
-        next_url.path().pop();
-        next_url.path().push("mod/0");
-        return Ok(Response::with((::iron::status::MovedPermanently, ::iron::modifiers::Redirect(next_url))))
+        let mut url_string = String::new();
+        url_string.push_str(&format!("{}", request.url.scheme()));
+        url_string.push_str("://");
+        url_string.push_str(&format!("{}", request.url.host()));
+        url_string.push(':');
+        url_string.push_str(&format!("{}", request.url.port()));
+
+        let mut prev_url = request.url.path().clone();
+        prev_url.pop();
+        prev_url.push("mod");
+        prev_url.push("0");
+
+        for s in prev_url {
+            url_string.push('/');
+            url_string.push_str(s);
+        };
+
+        let new_url = iron::Url::parse(&url_string).unwrap();
+        return Ok(Response::with((::iron::status::MovedPermanently, ::iron::modifiers::Redirect(new_url))))
     }
 
-    Ok(Response::with(("text/html".parse::<iron::mime::Mime>().unwrap(), iron::status::Ok, "Incorrect password or username")))
+    Ok(Response::with(("text/html".parse::<iron::mime::Mime>().unwrap(), iron::status::Ok, "Incorrect username or password")))
 }

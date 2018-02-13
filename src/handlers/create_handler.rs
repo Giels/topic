@@ -1,6 +1,10 @@
 use iron::prelude::*;
+use iron;
 use ::sha2::Digest;
 use ::sha2::Sha256;
+
+use postgres::types::ToSql;
+use postgres;
 
 use std;
 
@@ -24,7 +28,7 @@ use chrono::Utc;
 fn make_new_post(thread: &str, date: Option<&NaiveDateTime>, params: &::params::Map, conn: &super::PostgresConnection) -> Result<(), String> {
     let mut hasher = ::sha2::Sha256::new();
     hasher.input(&String::from_value(&params["ip"]).unwrap().as_bytes());
-    let ip = std::str::from_utf8(hasher.result().as_slice()).unwrap().to_owned();
+    let ip = format!("{:?}", hasher.result().as_slice()).to_owned();
 
     if super::banned(conn, &ip) {
         Err(format!("Users with this IP are banned: {}", super::ban_reason(conn, &ip)).to_string())
@@ -34,7 +38,7 @@ fn make_new_post(thread: &str, date: Option<&NaiveDateTime>, params: &::params::
         let mut hasher = Sha256::new();
         let password = &String::from_value(&params["password"]).unwrap() as &str;
         hasher.input(password.as_bytes());
-        let password = std::str::from_utf8(&hasher.result().as_slice()).unwrap().to_owned();
+        let password = format!("{:?}", &hasher.result().as_slice()).to_owned();
 
         let content = &String::from_value(&params["content"]).unwrap() as &str;
         let mut md_options = md::Extension::empty();
@@ -61,12 +65,12 @@ fn make_new_post(thread: &str, date: Option<&NaiveDateTime>, params: &::params::
             format!("<a href=\"{0}#{1}\">@{1}</a>", page, post_num)
         })) as &str;
 
-        let thread = str::parse::<i64>(thread).unwrap();
+        let thread = str::parse::<i32>(thread).unwrap();
 
         let number = ::db::get_last_post_number(conn, thread).unwrap();
 
         let number = if number.len() > 0 {
-            1 + number.get(0).get::<_,i64>(0)
+            1 + number.get(0).get::<_,i32>(0)
         } else {
             0
         };
@@ -77,7 +81,7 @@ fn make_new_post(thread: &str, date: Option<&NaiveDateTime>, params: &::params::
         } else {
             now = *date.unwrap();
         }
-        let _ = ::db::insert_post(conn, thread, number, name, content, &password, bump, &ip, &now);
+        let res = ::db::insert_post(conn, thread, number as i32, name, content, &password, bump, &ip, &now);
 
         if bump {
             let _ = ::db::bump_thread(conn, thread, &now);
@@ -94,7 +98,7 @@ pub fn handle_new_post(request: &mut Request) -> IronResult<Response> {
 
     let thread = &get_var!(request, "thread") as &str;
 
-    let thread_id = str::parse::<i64>(thread).unwrap_or(-1);
+    let thread_id = str::parse::<i32>(thread).unwrap_or(-1);
     if thread_id < 0 {
         return super::handle_404();
     }
@@ -109,11 +113,11 @@ pub fn handle_new_post(request: &mut Request) -> IronResult<Response> {
     match make_new_post(thread, None, &params, &conn) {
         Err(e) => Ok(Response::with((::iron::status::Ok, e))),
         Ok(_) => {
-            let mut previous_url = request.url.clone();
-            previous_url.path().pop();
-            previous_url.path().pop();
-            previous_url.path().push(&format!("{}", new_page));
-            Ok(Response::with((::iron::status::MovedPermanently, ::iron::modifiers::Redirect(previous_url))))
+            let path = request.url.path();
+            let board_frag = path.get(0).unwrap();
+            let thread_frag = path.get(2).unwrap();
+            let new_url = iron::Url::parse(&format!("{}://{}:{}/{}/t/{}/{}", request.url.scheme(), request.url.host(), request.url.port(), board_frag, thread_frag, new_page)).unwrap();
+            Ok(Response::with((::iron::status::MovedPermanently, ::iron::modifiers::Redirect(new_url))))
         }
     }
 }
@@ -133,18 +137,16 @@ pub fn handle_new_thread(request: &mut Request) -> IronResult<Response> {
     let title = String::from_value(&params["title"]).unwrap();
 
     let now = Utc::now().naive_utc();
-    let thread = ::db::insert_thread(&conn, &title as &str, &board as &str, &now).unwrap().get(0).get::<_,i64>(0);
+    let thread = ::db::insert_thread(&conn, &title as &str, &board as &str, &now).unwrap().get(0).get::<_,i32>(0);
     let thread = &format!("{}", thread) as &str;
 
     match make_new_post(thread, Some(&now), &params, &conn) {
-        Err(e) => Ok(Response::with((::iron::status::Ok, e))),
+        Err(e) => { Ok(Response::with((::iron::status::Ok, e))) },
         Ok(_) => {
-            let mut next_url = request.url.clone();
-            next_url.path().pop();
-            next_url.path().push("t");
-            next_url.path().push(&thread.to_string());
-            next_url.path().push("0");
-            Ok(Response::with((::iron::status::MovedPermanently, ::iron::modifiers::Redirect(next_url))))
+            let path = request.url.path();
+            let board_frag = path.get(0).unwrap();
+            let new_url = iron::Url::parse(&format!("{}://{}:{}/{}/t/{}/{}", request.url.scheme(), request.url.host(), request.url.port(), board_frag, thread, 0)).unwrap();
+            Ok(Response::with((::iron::status::MovedPermanently, ::iron::modifiers::Redirect(new_url))))
         }
     }
 }

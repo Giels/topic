@@ -1,4 +1,5 @@
 use iron::prelude::*;
+use iron;
 
 use std;
 
@@ -15,7 +16,7 @@ pub fn handle_report_delete_post(request: &mut Request) -> IronResult<Response> 
     let conn = request.get::<::persistent::Read<::db::PostgresPool>>().unwrap().get().unwrap();
     let config = request.get::<::persistent::Read<config::Config>>().unwrap();
 
-    let thread = str::parse::<i64>(&get_var!(request, "thread") as &str).unwrap_or(-1);
+    let thread = str::parse::<i32>(&get_var!(request, "thread") as &str).unwrap_or(-1);
     if thread >= 0 {
         let valid = ::db::get_num_posts(&conn, thread).unwrap().get(0).get::<_,i64>(0) > 0;
         if !valid {
@@ -26,14 +27,14 @@ pub fn handle_report_delete_post(request: &mut Request) -> IronResult<Response> 
     let mut selected = vec![];
     for k in params.keys() {
         if k.starts_with("p_") {
-            selected.push(str::parse::<i64>(&k[2..]).unwrap());
+            selected.push(str::parse::<i32>(&k[2..]).unwrap());
         }
     }
 
     let ip = &request.remote_addr.ip().to_string() as &str;
     let mut hasher = Sha256::new();
     hasher.input(ip.as_bytes());
-    let ip = std::str::from_utf8(&hasher.result().as_slice()).unwrap().to_owned();
+    let ip = format!("{:?}", &hasher.result().as_slice()).to_owned();
 
     let action = &String::from_value(&params["action"]).unwrap() as &str;
 
@@ -41,7 +42,7 @@ pub fn handle_report_delete_post(request: &mut Request) -> IronResult<Response> 
     let password = &String::from_value(&params["password"]).unwrap() as &str;
     let invalid = str::len(password) == 0;
     hasher.input(password.as_bytes());
-    let password = std::str::from_utf8(&hasher.result().as_slice()).unwrap().to_owned();
+    let password = format!("{:?}", &hasher.result().as_slice()).to_owned();
 
     let mut thread_deleted = false;
 
@@ -54,7 +55,7 @@ pub fn handle_report_delete_post(request: &mut Request) -> IronResult<Response> 
                 if ::db::get_post_password(&conn, s).unwrap().get(0).get::<_,String>(0) != password {
                     continue;
                 } else {
-                    if ::db::get_first_post_id(&conn, thread).unwrap().get(0).get::<_,i64>(0) == s {
+                    if ::db::get_first_post_id(&conn, thread).unwrap().get(0).get::<_,i32>(0) == s {
                         let _ = ::db::delete_thread(&conn, thread);
                         thread_deleted = true;
                         break;
@@ -71,17 +72,31 @@ pub fn handle_report_delete_post(request: &mut Request) -> IronResult<Response> 
         }
     }
 
-    let mut previous_url = request.url.clone();
-    previous_url.path().pop();
-    previous_url.path().pop();
+    let new_page_str = &format!("{}", new_page);
+    let mut url_string = String::new();
+    url_string.push_str(&format!("{}", request.url.scheme()));
+    url_string.push_str("://");
+    url_string.push_str(&format!("{}", request.url.host()));
+    url_string.push(':');
+    url_string.push_str(&format!("{}", request.url.port()));
+
+    let mut prev_url = request.url.path().clone();
+    prev_url.pop();
+    prev_url.pop();
 
     if thread_deleted {
-        previous_url.path().pop();
-        previous_url.path().pop();
-        previous_url.path().push("0");
+        prev_url.pop();
+        prev_url.pop();
+        prev_url.push("0");
     } else {
-        previous_url.path().push(&format!("{}", new_page));
+        prev_url.push(new_page_str);
     }
 
-    Ok(Response::with((::iron::status::MovedPermanently, ::iron::modifiers::Redirect(previous_url))))
+    for s in prev_url {
+        url_string.push('/');
+        url_string.push_str(s);
+    };
+
+    let new_url = iron::Url::parse(&url_string).unwrap();
+    Ok(Response::with((::iron::status::MovedPermanently, ::iron::modifiers::Redirect(new_url))))
 }

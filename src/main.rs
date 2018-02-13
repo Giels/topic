@@ -33,9 +33,9 @@ fn main() {
         view_res: get "/res/:res" => handle_resource,
         view_admin: get "/mod/:page" => handle_mod_page,
         view_admin_login: get "/login" => handle_login_page,
-        manage_admin_login: get "/login_" => handle_login,
-        no_mod_id: get "/mod" => redirect_page0,
-        no_board_id: get "/:board" => redirect_page0,
+        manage_admin_login: post "/login_" => handle_login,
+        no_mod_page: get "/mod" => redirect_page0,
+        no_board_page: get "/:board" => redirect_page0,
         index: get "/" => handle_main,
     };
 

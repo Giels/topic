@@ -7,7 +7,7 @@
 
 <body>
 <div class="container">
- <form method="post" action="/mod">
+ <form method="post" action="/login_">
  <label for="uname">Username</label>
  <input type="text" name="uname">
  <label for="pass">Password</label>

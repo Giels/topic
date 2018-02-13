@@ -10,7 +10,7 @@ CREATE TABLE threads (
 	uid SERIAL UNIQUE,
 	bid SERIAL REFERENCES boards (uid),
 	title VARCHAR(255),
-	bdate TIMESTAMP NOT NULL DEFAULT current_timestamp,
+	bdate TIMESTAMP  NOT NULL DEFAULT current_timestamp,
 	sticky BOOLEAN NOT NULL DEFAULT(FALSE)
 );
 
@@ -21,9 +21,10 @@ CREATE TABLE posts (
 	name VARCHAR(255) NOT NULL DEFAULT 'Anonymous',
 	content TEXT,
 	password VARCHAR(255),
-	bump TIMESTAMP NOT NULL DEFAULT current_timestamp,
-	ip VARCHAR(15) NOT NULL,
-	cdate TIMESTAMP NOT NULL DEFAULT current_timestamp,
+	bump BOOLEAN NOT NULL DEFAULT(TRUE),
+	ip VARCHAR(255) NOT NULL,
+	cdate TIMESTAMP  NOT NULL DEFAULT current_timestamp,
+	type INTEGER NOT NULL DEFAULT 0,
 	deleted BOOLEAN NOT NULL DEFAULT(FALSE)
 );
 
@@ -43,9 +44,14 @@ CREATE TABLE mods (
 );
 
 CREATE TABLE reports (
-	ip VARCHAR(15) NOT NULL,
+	ip VARCHAR(255) NOT NULL,
 	post SERIAL REFERENCES posts (uid),
 	reason VARCHAR(255)
+);
+
+CREATE TABLE bans (
+	ip VARCHAR(255) NOT NULL,
+	reason VARCHAR(255) NOT NULL
 );
 
 INSERT INTO mods (uname, pass, can_delete, can_edit, can_ban, can_sticky) VALUES

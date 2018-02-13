@@ -68,21 +68,21 @@ pub fn handle_board(request: &mut Request) -> IronResult<Response> {
     let mut threads = vec![];
 
     for s in sticky_thread_rows.iter() {
-        let uid = s.get("uid");
-        let cdate = ::db::get_thread_cdate(&conn, uid).unwrap().get(0).get::<_,NaiveDateTime>(0).to_string();
-        let mdate = ::db::get_thread_mdate(&conn, uid).unwrap().get(0).get::<_,NaiveDateTime>(0).to_string();
+        let uid: i32 = s.get("uid");
+        let cdate: NaiveDateTime = ::db::get_thread_cdate(&conn, uid).unwrap().get(0).get(0);
+        let mdate: NaiveDateTime = ::db::get_thread_mdate(&conn, uid).unwrap().get(0).get(0);
         let pc = ::db::get_num_posts(&conn, uid).unwrap().get(0).get(0);
 
-        sticky_threads.push(Thread { uid: uid, title: s.get("title"), mdate: mdate, cdate: cdate, post_count: pc });
+        sticky_threads.push(Thread { uid: uid as i64, title: s.get("title"), mdate: mdate.to_string(), cdate: cdate.to_string(), post_count: pc });
     }
 
     for s in thread_rows.iter() {
-        let uid = s.get("uid");
-        let cdate = ::db::get_thread_cdate(&conn, uid).unwrap().get(0).get::<_,NaiveDateTime>(0).to_string();
-        let mdate = ::db::get_thread_mdate(&conn, uid).unwrap().get(0).get::<_,NaiveDateTime>(0).to_string();
+        let uid: i32 = s.get("uid");
+        let cdate: NaiveDateTime = ::db::get_thread_cdate(&conn, uid).unwrap().get(0).get(0);
+        let mdate: NaiveDateTime = ::db::get_thread_mdate(&conn, uid).unwrap().get(0).get(0);
         let pc = ::db::get_num_posts(&conn, uid).unwrap().get(0).get(0);
 
-        threads.push(Thread { uid: uid, title: s.get("title"), mdate: mdate, cdate: cdate, post_count: pc });
+        threads.push(Thread { uid: uid as i64, title: s.get("title"), mdate: mdate.to_string(), cdate: cdate.to_string(), post_count: pc });
     }
 
     let info_rows = ::db::get_board_info(&conn, board).unwrap();

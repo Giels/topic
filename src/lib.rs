@@ -1,6 +1,5 @@
 #[macro_use]
 extern crate serde_derive;
-//extern crate rustc_serialize;
 
 extern crate regex;
 

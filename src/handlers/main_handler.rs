@@ -2,6 +2,8 @@ use std::str;
 use iron::prelude::*;
 use std::collections::HashMap;
 
+use iron;
+
 use ::persistent::Read;
 
 use config;
@@ -26,15 +28,40 @@ struct SiteInfo {
 }
 
 pub fn redirect_page0(request: &mut Request) -> IronResult<Response> {
-    let mut url = request.url.clone();
-    url.path().push("0");
-    Ok(Response::with((::iron::status::MovedPermanently, ::iron::modifiers::Redirect(url))))
+    let mut url_string = String::new();
+    url_string.push_str(&format!("{}", request.url.scheme()));
+    url_string.push_str("://");
+    url_string.push_str(&format!("{}", request.url.host()));
+    url_string.push(':');
+    url_string.push_str(&format!("{}", request.url.port()));
+
+    for s in request.url.path() {
+        url_string.push('/');
+        url_string.push_str(s);
+    };
+
+    url_string.push_str("/0");
+    let new_url = iron::Url::parse(&url_string).unwrap();
+    Ok(Response::with((::iron::status::MovedPermanently, ::iron::modifiers::Redirect(new_url))))
 }
 
 pub fn redirect_up(request: &mut Request) -> IronResult<Response> {
-    let mut url = request.url.clone();
-    url.path().pop();
-    Ok(Response::with((::iron::status::MovedPermanently, ::iron::modifiers::Redirect(url))))
+    let mut url_string = String::new();
+    url_string.push_str(request.url.scheme());
+    url_string.push_str("://");
+    url_string.push_str(&format!("{}", request.url.host()));
+    url_string.push(':');
+
+    let mut prev_elem = format!("{}", request.url.port());
+
+    for s in request.url.path() {
+        url_string.push_str(&prev_elem);
+        url_string.push('/');
+        prev_elem = s.to_owned();
+    };
+
+    let new_url = iron::Url::parse(&url_string).unwrap();
+    Ok(Response::with((::iron::status::MovedPermanently, ::iron::modifiers::Redirect(new_url))))
 }
 
 pub fn handle_main(request: &mut Request) -> IronResult<Response> {
