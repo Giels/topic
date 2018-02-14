@@ -4,7 +4,7 @@ extern crate mustache;
 use std;
 
 use iron::prelude::*;
-use persistent::Read;
+use persistent::{Read,State};
 
 use std::collections::HashMap;
 
@@ -39,7 +39,8 @@ pub fn handle_mod_page(request: &mut Request) -> IronResult<Response> {
     let conn = request.get::<Read<::db::PostgresPool>>().unwrap().get().unwrap();
     let params = request.get::<::params::Params>().unwrap();
     let mut next_url = request.url.clone();
-    let session = request.get::<::persistent::Read<::sessions::SessionStore<String, String>>>().unwrap();
+    let session_lock = request.get::<State<::sessions::SessionStore<String, String>>>().unwrap();
+    let session = session_lock.read().unwrap();
     
     let mut hasher = ::sha2::Sha256::new();
     hasher.input(&request.remote_addr.ip().to_string().as_bytes());
@@ -52,7 +53,7 @@ pub fn handle_mod_page(request: &mut Request) -> IronResult<Response> {
         let mod_powers = ::db::get_mod_powers(&conn, uname).unwrap();
         let mod_str = "Mod Abilities:".to_string();
         for p in possible_powers {
-            data.insert(p.to_string(), mod_powers.get(0).get(p));
+            data.insert(p.to_string(), format!("{}", mod_powers.get(0).get::<_,bool>(p)));
         }
 
         let mut bytes = vec![];
@@ -84,7 +85,7 @@ pub fn handle_mod_page(request: &mut Request) -> IronResult<Response> {
 }
 
 pub fn handle_login(request: &mut Request) -> IronResult<Response> {
-    let conn = request.get::<::persistent::Read<::db::PostgresPool>>().unwrap().get().unwrap();
+    let conn = request.get::<Read<::db::PostgresPool>>().unwrap().get().unwrap();
     let params = request.get::<::params::Params>().unwrap();
     let params = request.get::<::params::Params>().unwrap();
     let uname = &String::from_value(&params["uname"]).unwrap() as &str;
@@ -100,10 +101,11 @@ pub fn handle_login(request: &mut Request) -> IronResult<Response> {
         hasher.input(&request.remote_addr.ip().to_string().as_bytes());
         let ip = format!("{:?}", hasher.result().as_slice()).to_owned();
 
-        request.get_mut::<::persistent::Read<::sessions::SessionStore<String, String>>>().map(|mut session| {
-            let ref mut table = *Arc::get_mut(&mut session).unwrap();
+        {
+            let session_lock = request.get::<State<::sessions::SessionStore<String, String>>>().unwrap();
+            let mut table = session_lock.write().unwrap();
             table.insert(ip.to_owned(), uname.to_string());
-        });
+        }
 
         let mut url_string = String::new();
         url_string.push_str(&format!("{}", request.url.scheme()));

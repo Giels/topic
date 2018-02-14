@@ -32,7 +32,7 @@
   <div>
   <div class="container">
   <a name="{{number}}"></a>
-  <div class="twelve columns button button-primary{{#bump}}-bump{{/bump}} post-type-{{typ}}">
+  <div class="twelve columns button button-primary{{#bump}}-bump{{/bump}}-{{typ}}">
   <div class="one column">
   <input type="checkbox" name="p_{{uid}}">
   </div>

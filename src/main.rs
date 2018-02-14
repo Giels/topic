@@ -43,6 +43,6 @@ fn main() {
     let listen_on = &format!("{}:{}", config.server.host, config.server.port) as &str;
     chain.link(persistent::Read::<db::PostgresPool>::both(pool));
     chain.link(persistent::Read::<config::Config>::both(config));
-    chain.link(persistent::Read::<sessions::SessionStore<String, String>>::both(logged_mods));
+    chain.link(persistent::State::<sessions::SessionStore<String, String>>::both(logged_mods));
     Iron::new(chain).http(listen_on).unwrap();
 }

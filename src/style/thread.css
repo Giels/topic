@@ -19,39 +19,88 @@ div.post-button > div {
 	width: 50%;
 }
 
-.post-type-0 {
+.button.button-primary-0,
+button.button-primary-0 {
+  color: #FFF;
+  background-color: #33C3F0;
+  border-color: #33C3F0;
 }
 
-.post-type-1 {
-	background-color: #333333;
+.button.button-primary-0:hover,
+button.button-primary-0:hover,
+.button.button-primary-0:focus,
+button.button-primary-0:focus {
+  color: #FFF;
+  background-color: #1EAEDB;
+  border-color: #1EAEDB;
 }
-.post-type-1:hover,
-.post-type-1:focus {
+
+.button.button-primary-1,
+button.button-primary-1 {
+  color: #FFF;
+  background-color: #030303;
+  border-color: #030303;
+}
+
+.button.button-primary-1:hover,
+button.button-primary-1:hover,
+.button.button-primary-1:focus,
+button.button-primary-1:focus {
+  color: #FFF;
+  background-color: #000000;
+  border-color: #000000;
+}
+
+.button.button-primary-2,
+button.button-primary-2 {
+  color: #FFF;
+  background-color: #72E3C0;
+  border-color: #72E3C0;
+}
+
+.button.button-primary-2:hover,
+button.button-primary-2:hover,
+.button.button-primary-2:focus,
+button.button-primary-2:focus {
+  color: #FFF;
+  background-color: #007EAB;
+  border-color: #007EAB;
+}
+
+.button-primary-bump-0 {
+	background-color: #13A3D0;
+	color: #FFF;
+	border-color: #13A3D0;
+}
+.button-primary-bump-0:hover,
+.button-primary-bump-0:focus {
+	color: #FFF;
+	background-color: #0393B0;
+	border-color: #0393B0;
+}
+
+.button-primary-bump-1 {
+	background-color: #333333;
+	color: #FFF;
+	border-color: #13A3D0;
+}
+.button-primary-bump-1:hover,
+.button-primary-bump-1:focus {
 	color: #FFF;
 	background-color: #000000;
 	border-color: #000000;
 }
 
-.post-type-2 {
+.button-primary-bump-2 {
 	background-color: #A313D0;
-}
-.post-type-2:hover,
-.post-type-2:focus {
-	color: #FFF;
-	background-color: #9303B0;
-	border-color: #9303B0;
-}
-
-.button-primary-bump {
-	background-color: #13A3D0;
 	color: #FFF;
 	border-color: #13A3D0;
 }
-.button-primary-bump:hover,
-.button-primary-bump:focus {
+.button-primary-bump-2:hover,
+.button-primary-bump-2:focus {
 	color: #FFF;
-	background-color: #0393B0;
-	border-color: #0393B0;
+	background-color: #9303B0;
+	border-color: #9303B0;
 }
 
 .rd-form {

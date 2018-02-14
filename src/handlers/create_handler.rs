@@ -15,6 +15,8 @@ use ::params::FromValue;
 
 use ::router::Router;
 
+use persistent::{State};
+
 use std::cmp;
 
 use regex::Regex;
@@ -25,7 +27,7 @@ use config;
 use chrono::NaiveDateTime;
 use chrono::Utc;
 
-fn make_new_post(thread: &str, date: Option<&NaiveDateTime>, params: &::params::Map, conn: &super::PostgresConnection) -> Result<(), String> {
+fn make_new_post(request: &mut Request, thread: &str, date: Option<&NaiveDateTime>, params: &::params::Map, conn: &super::PostgresConnection) -> Result<(), String> {
     let mut hasher = ::sha2::Sha256::new();
     hasher.input(&String::from_value(&params["ip"]).unwrap().as_bytes());
     let ip = format!("{:?}", hasher.result().as_slice()).to_owned();
@@ -81,7 +83,19 @@ fn make_new_post(thread: &str, date: Option<&NaiveDateTime>, params: &::params::
         } else {
             now = *date.unwrap();
         }
-        let res = ::db::insert_post(conn, thread, number as i32, name, content, &password, bump, &ip, &now);
+        let session_lock = request.get::<State<::sessions::SessionStore<String, String>>>().unwrap();
+        let session = session_lock.read().unwrap();
+    
+        let mut hasher = ::sha2::Sha256::new();
+        hasher.input(&request.remote_addr.ip().to_string().as_bytes());
+        let ip = format!("{:?}", hasher.result().as_slice()).to_owned();
+
+        let _ = session.get(&ip.to_owned()).map(|uname| {
+            // Admin post type is 2, site owner post type is 1. Regular users are type 0.
+            ::db::insert_special_post(conn, thread, number as i32, uname, content, &password, bump, 2, &ip, &now)
+        }).unwrap_or_else(|| {
+            ::db::insert_post(conn, thread, number as i32, name, content, &password, bump, &ip, &now)
+        });
 
         if bump {
             let _ = ::db::bump_thread(conn, thread, &now);
@@ -96,7 +110,7 @@ pub fn handle_new_post(request: &mut Request) -> IronResult<Response> {
     let conn = request.get::<::persistent::Read<::db::PostgresPool>>().unwrap().get().unwrap();
     let config = request.get::<::persistent::Read<config::Config>>().unwrap();
 
-    let thread = &get_var!(request, "thread") as &str;
+    let thread = &{ get_var!(request, "thread").to_owned() } as &str;
 
     let thread_id = str::parse::<i32>(thread).unwrap_or(-1);
     if thread_id < 0 {
@@ -110,7 +124,7 @@ pub fn handle_new_post(request: &mut Request) -> IronResult<Response> {
     params.insert("ip".to_string(), ::params::Value::String(ip.to_owned()));
     params.insert("ppp".to_string(), ::params::Value::U64(config.site.posts_per_page));
 
-    match make_new_post(thread, None, &params, &conn) {
+    match make_new_post(request, thread, None, &params, &conn) {
         Err(e) => Ok(Response::with((::iron::status::Ok, e))),
         Ok(_) => {
             let path = request.url.path();
@@ -132,7 +146,7 @@ pub fn handle_new_thread(request: &mut Request) -> IronResult<Response> {
     params.insert("ip".to_string(), ::params::Value::String(ip.to_owned()));
     params.insert("ppp".to_string(), ::params::Value::U64(config.site.posts_per_page));
 
-    let board = get_var!(request, "board");
+    let board = { get_var!(request, "board").to_owned() };
 
     let title = String::from_value(&params["title"]).unwrap();
 
@@ -140,7 +154,7 @@ pub fn handle_new_thread(request: &mut Request) -> IronResult<Response> {
     let thread = ::db::insert_thread(&conn, &title as &str, &board as &str, &now).unwrap().get(0).get::<_,i32>(0);
     let thread = &format!("{}", thread) as &str;
 
-    match make_new_post(thread, Some(&now), &params, &conn) {
+    match make_new_post(request, thread, Some(&now), &params, &conn) {
         Err(e) => { Ok(Response::with((::iron::status::Ok, e))) },
         Ok(_) => {
             let path = request.url.path();

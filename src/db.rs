@@ -71,7 +71,7 @@ macro_rules! def_updates {
 
 def_updates! {
     insert_post(tid: i32, number: i32, name: &str, content: &str, password: &str, bump: bool, ip: &str, date: &NaiveDateTime) => "INSERT INTO posts (tid, number, name, content, password, bump, ip, cdate) VALUES($1, $2, $3, $4, $5, $6, $7, $8)";
-    insert_special_post(tid: i32, number: i64, name: &str, content: &str, password: &str, bump: bool, typ: i64, ip: &str) => "INSERT INTO posts (tid, number, name, content, password, bump, type, ip) VALUES($1, $2, $3, $4, $5, $6, $7, $8)";
+    insert_special_post(tid: i32, number: i32, name: &str, content: &str, password: &str, bump: bool, typ: i32, ip: &str, date: &NaiveDateTime) => "INSERT INTO posts (tid, number, name, content, password, bump, type, ip, cdate) VALUES($1, $2, $3, $4, $5, $6, $7, $8, $9)";
 
     bump_thread(tid: i32, bdate: &NaiveDateTime) => "UPDATE threads SET bdate = $2 WHERE uid = $1";
 
@@ -84,7 +84,7 @@ def_updates! {
 def_queries! {
     valid_mod_login(uname: &str, pass: &str) => "SELECT count(*) FROM mods WHERE uname = $1 AND pass = $2";
 
-    get_mod_powers(uname: &str) => "SELECT can_delete, can_ban, can_sticky, can_edit FROM mods WHERE unmae = $1";
+    get_mod_powers(uname: &str) => "SELECT can_delete, can_ban, can_sticky, can_edit FROM mods WHERE uname = $1";
 
     insert_thread(title: &str, link: &str, bdate: &NaiveDateTime) => "INSERT INTO threads (title, bid, bdate) VALUES($1, (SELECT uid FROM boards WHERE link = $2 LIMIT 1), $3) RETURNING uid";
 
